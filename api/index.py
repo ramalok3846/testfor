@@ -5,8 +5,8 @@ from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 
-BASE_URL = "https://www.horang2.com"
-SEARCH_URL = "https://www.horang2.com/search"
+BASE_URL = "https://www.horaeng.com"
+SEARCH_URL = "https://www.horaeng.com/search"
 
 # 차단 우회용 실제 브라우저 헤더 설정
 HEADERS = {
