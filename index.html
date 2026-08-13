@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>호랭이닷컴 기출 추출기 (GitHub Pages)</title>
+    <title>호랭이닷컴 기출 추출기</title>
     <style>
         :root {
             --bg-color: #f4f6f9;
             --card-bg: #ffffff;
-            --primary-color: #ff6b00; /* 호랭이 오렌지 */
+            --primary-color: #ff6b00;
             --text-color: #333333;
             --border-color: #e1e4e8;
         }
@@ -42,11 +42,6 @@
             color: var(--primary-color);
             font-size: 1.8rem;
             margin-bottom: 6px;
-        }
-
-        .header p {
-            color: #666;
-            font-size: 0.95rem;
         }
 
         .search-card {
@@ -91,7 +86,6 @@
             font-size: 0.95rem;
             outline: none;
             background-color: #fff;
-            transition: border-color 0.2s;
         }
 
         select:focus {
@@ -108,11 +102,6 @@
             font-size: 1.05rem;
             font-weight: bold;
             cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .btn-submit:hover {
-            background-color: #e05e00;
         }
 
         .results-container {
@@ -133,17 +122,11 @@
             font-size: 1.1rem;
             font-weight: bold;
             margin-bottom: 12px;
-            color: #222;
         }
 
         .result-title a {
-            color: inherit;
+            color: #222;
             text-decoration: none;
-        }
-
-        .result-title a:hover {
-            color: var(--primary-color);
-            text-decoration: underline;
         }
 
         .download-links {
@@ -160,7 +143,6 @@
             font-weight: 600;
             display: inline-flex;
             align-items: center;
-            gap: 4px;
         }
 
         .btn-pdf { background-color: #e74c3c; color: white; }
@@ -190,24 +172,20 @@
 <div class="container">
     <div class="header">
         <h1>🐯 호랭이닷컴 기출 추출기</h1>
-        <p>조건을 선택하여 필요한 문제지, 대본, MP3 음원을 찾으세요.</p>
+        <p>조건 선택 후 검색 버튼을 누르세요.</p>
     </div>
 
     <div class="search-card">
         <form id="searchForm" onsubmit="handleSearch(event)">
             <div class="form-grid">
-                <!-- 학년 선택 -->
                 <div class="form-group">
                     <label for="grade">학년</label>
                     <select id="grade" required>
                         <option value="고3">고3 / N수</option>
                         <option value="고2">고2</option>
                         <option value="고1">고1</option>
-                        <option value="중3">중3</option>
                     </select>
                 </div>
-
-                <!-- 연도 선택 -->
                 <div class="form-group">
                     <label for="year">연도</label>
                     <select id="year" required>
@@ -216,25 +194,20 @@
                         <option value="2024" selected>2024년</option>
                         <option value="2023">2023년</option>
                         <option value="2022">2022년</option>
-                        <option value="2021">2021년</option>
                     </select>
                 </div>
-
-                <!-- 월 선택 -->
                 <div class="form-group">
                     <label for="month">시행월</label>
                     <select id="month" required>
                         <option value="3월">3월</option>
                         <option value="4월">4월</option>
-                        <option value="6월" selected>6월 (모평)</option>
+                        <option value="6월" selected>6월</option>
                         <option value="7월">7월</option>
-                        <option value="9월">9월 (모평)</option>
+                        <option value="9월">9월</option>
                         <option value="10월">10월</option>
-                        <option value="11월">11월 (수능)</option>
+                        <option value="11월">11월</option>
                     </select>
                 </div>
-
-                <!-- 과목 선택 -->
                 <div class="form-group">
                     <label for="subject">과목</label>
                     <select id="subject" required>
@@ -242,28 +215,23 @@
                         <option value="국어">국어</option>
                         <option value="수학">수학</option>
                         <option value="한국사">한국사</option>
-                        <option value="사회탐구">사회탐구</option>
-                        <option value="과학탐구">과학탐구</option>
                     </select>
                 </div>
             </div>
-
             <button type="submit" class="btn-submit">🔍 자료 검색하기</button>
         </form>
     </div>
 
     <div id="loading" class="loading">
-        ⏳ 호랭이닷컴에서 자료를 탐색 중입니다... (약 3~5초 소요)
+        ⏳ 호랭이닷컴에서 자료를 검색 중입니다...
     </div>
 
-    <div id="results" class="results-container">
-        <!-- 검색 결과 출력 영역 -->
-    </div>
+    <div id="results" class="results-container"></div>
 </div>
 
 <script>
-    // CORS 우회용 공용 프록시 API (https 통신 지원)
-    const CORS_PROXY = "https://api.allorigins.win/raw?url=";
+    // 차단율이 낮고 신뢰도가 높은 CORS 프록시 URL
+    const PROXY_URL = "https://corsproxy.io/?";
     const BASE_URL = "https://www.horang2.com";
 
     async function handleSearch(event) {
@@ -274,9 +242,7 @@
         const month = document.getElementById('month').value;
         const subject = document.getElementById('subject').value;
 
-        // 검색어 구성 (예: "2024년 고3 6월 영어")
         const searchQuery = `${year}년 ${grade} ${month} ${subject}`;
-
         const loading = document.getElementById('loading');
         const results = document.getElementById('results');
 
@@ -284,52 +250,50 @@
         results.innerHTML = '';
 
         try {
-            // 1. 호랭이닷컴 검색 페이지 요청 (CORS Proxy 경유)
-            const searchTargetUrl = `${BASE_URL}/search?q=${encodeURIComponent(searchQuery)}`;
-            const response = await fetch(CORS_PROXY + encodeURIComponent(searchTargetUrl));
+            const targetSearchUrl = `${BASE_URL}/search?q=${encodeURIComponent(searchQuery)}`;
             
-            if (!response.ok) throw new Error("네트워크 응답 실패");
+            // corsproxy.io 경유 요청
+            const response = await fetch(PROXY_URL + encodeURIComponent(targetSearchUrl));
+            
+            if (!response.ok) {
+                throw new Error(`상태 코드: ${response.status}`);
+            }
 
             const htmlText = await response.text();
-            
-            // DOMParser를 사용해 HTML 문자열을 DOM 객체로 파싱
             const parser = new DOMParser();
             const doc = parser.parseFromString(htmlText, "text/html");
 
-            // 2. 검색 결과 게시물 목록 추출
-            const links = Array.from(doc.querySelectorAll("a"))
-                .filter(a => a.href && (a.href.includes("/board") || a.href.includes("article") || a.href.includes("post") || a.textContent.includes(subject)))
-                .slice(0, 5); // 상위 5개 결과
+            // 게시글 링크 수집
+            const rawLinks = Array.from(doc.querySelectorAll("a"));
+            const validLinks = rawLinks.filter(a => {
+                const href = a.getAttribute("href") || "";
+                return href.includes("board") || href.includes("article") || href.includes("view") || href.includes("post");
+            }).slice(0, 5);
 
-            if (links.length === 0) {
+            if (validLinks.length === 0) {
                 loading.style.display = 'none';
-                results.innerHTML = '<div class="empty-msg">검색 결과가 없습니다. 조건을 확인해주세요.</div>';
+                results.innerHTML = `<div class="empty-msg">"${searchQuery}" 검색 결과가 없습니다.</div>`;
                 return;
             }
 
-            // 3. 각 게시글 상세 페이지에 들어가 파일 링크(PDF, MP3, 대본) 수집
             const items = [];
-            
-            for (let link of links) {
-                let postHref = link.getAttribute("href");
-                if (!postHref) continue;
 
-                let postUrl = postHref.startsWith("http") ? postHref : BASE_URL + postHref;
+            for (let link of validLinks) {
+                let href = link.getAttribute("href");
+                let postUrl = href.startsWith("http") ? href : BASE_URL + href;
                 let title = link.textContent.trim() || searchQuery;
 
                 try {
-                    const postRes = await fetch(CORS_PROXY + encodeURIComponent(postUrl));
+                    const postRes = await fetch(PROXY_URL + encodeURIComponent(postUrl));
                     const postHtml = await postRes.text();
                     const postDoc = parser.parseFromString(postHtml, "text/html");
 
                     const files = { pdf: [], script: [], audio: [] };
+                    const fileElements = postDoc.querySelectorAll("a[href]");
 
-                    // 게시글 내부 다운로드/첨부파일 링크 수집
-                    const fileLinks = postDoc.querySelectorAll("a[href]");
-
-                    fileLinks.forEach(f => {
+                    fileElements.forEach(f => {
                         const fileHref = f.getAttribute("href") || "";
-                        const fileName = f.textContent.trim() || "다운로드";
+                        const fileName = f.textContent.trim() || "파일 다운로드";
                         let fullFileUrl = fileHref.startsWith("http") ? fileHref : BASE_URL + fileHref;
 
                         const lowerHref = fileHref.toLowerCase();
@@ -345,8 +309,8 @@
                     });
 
                     items.push({ title, postUrl, files });
-                } catch (e) {
-                    console.error("게시글 파싱 실패:", postUrl, e);
+                } catch (err) {
+                    console.error("게시글 파싱 에러:", err);
                 }
             }
 
@@ -358,10 +322,10 @@
             results.innerHTML = `
                 <div class="empty-msg">
                     ❌ 자료를 가져오지 못했습니다.<br>
-                    CORS 우회 서버 응답이 지연되거나 호랭이닷컴 검색 구조 변경일 수 있습니다.
+                    (${error.message})<br><br>
+                    호랭이닷컴 검색 시스템이 차단되었거나 점검 중일 수 있습니다.
                 </div>
             `;
-            console.error(error);
         }
     }
 
@@ -369,31 +333,26 @@
         const results = document.getElementById('results');
 
         if (!items || items.length === 0) {
-            results.innerHTML = '<div class="empty-msg">일치하는 자료를 찾지 못했습니다.</div>';
+            results.innerHTML = '<div class="empty-msg">검색된 자료가 없습니다.</div>';
             return;
         }
 
         items.forEach(item => {
             let linksHtml = '';
 
-            // PDF (문제/정답)
-            if (item.files.pdf && item.files.pdf.length > 0) {
+            if (item.files.pdf) {
                 item.files.pdf.forEach(f => {
-                    linksHtml += `<a href="${f.url}" target="_blank" rel="noopener noreferrer" class="btn-dl btn-pdf">📌 ${f.name}</a>`;
+                    linksHtml += `<a href="${f.url}" target="_blank" rel="noopener noreferrer" class="btn-dl btn-pdf">📌 ${f.name}</a> `;
                 });
             }
-
-            // 영어 대본 (Script)
-            if (item.files.script && item.files.script.length > 0) {
+            if (item.files.script) {
                 item.files.script.forEach(f => {
-                    linksHtml += `<a href="${f.url}" target="_blank" rel="noopener noreferrer" class="btn-dl btn-script">📝 ${f.name}</a>`;
+                    linksHtml += `<a href="${f.url}" target="_blank" rel="noopener noreferrer" class="btn-dl btn-script">📝 ${f.name}</a> `;
                 });
             }
-
-            // 영어 MP3 음원
-            if (item.files.audio && item.files.audio.length > 0) {
+            if (item.files.audio) {
                 item.files.audio.forEach(f => {
-                    linksHtml += `<a href="${f.url}" target="_blank" rel="noopener noreferrer" class="btn-dl btn-audio">🎧 ${f.name}</a>`;
+                    linksHtml += `<a href="${f.url}" target="_blank" rel="noopener noreferrer" class="btn-dl btn-audio">🎧 ${f.name}</a> `;
                 });
             }
 
@@ -403,7 +362,7 @@
                         <a href="${item.postUrl}" target="_blank" rel="noopener noreferrer">${item.title}</a>
                     </div>
                     <div class="download-links">
-                        ${linksHtml || '<span style="color:#888; font-size:0.9rem;">이 게시물에는 직관적인 파일 링크가 없거나 본문 확인이 필요합니다.</span>'}
+                        ${linksHtml || '<span style="color:#888; font-size:0.9rem;">게시글 내 직접 다운로드 링크가 없습니다. 위 제목을 클릭해 직접 확인하세요.</span>'}
                     </div>
                 </div>
             `;
