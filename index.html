@@ -8,7 +8,7 @@
         :root {
             --bg-color: #f4f6f9;
             --card-bg: #ffffff;
-            --primary-color: #ff6b00;
+            --primary-color: #ff6b00; /* 호랭이 오렌지 */
             --text-color: #333333;
             --border-color: #e1e4e8;
         }
@@ -42,6 +42,11 @@
             color: var(--primary-color);
             font-size: 1.8rem;
             margin-bottom: 6px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 0.95rem;
         }
 
         .search-card {
@@ -102,6 +107,11 @@
             font-size: 1.05rem;
             font-weight: bold;
             cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-submit:hover {
+            background-color: #e05e00;
         }
 
         .results-container {
@@ -127,6 +137,11 @@
         .result-title a {
             color: #222;
             text-decoration: none;
+        }
+
+        .result-title a:hover {
+            color: var(--primary-color);
+            text-decoration: underline;
         }
 
         .download-links {
@@ -172,7 +187,7 @@
 <div class="container">
     <div class="header">
         <h1>🐯 호랭이닷컴 기출 추출기</h1>
-        <p>조건 선택 후 검색 버튼을 누르세요.</p>
+        <p>조건을 선택하여 필요한 문제지, 대본, MP3 음원을 찾으세요.</p>
     </div>
 
     <div class="search-card">
@@ -184,6 +199,7 @@
                         <option value="고3">고3 / N수</option>
                         <option value="고2">고2</option>
                         <option value="고1">고1</option>
+                        <option value="중3">중3</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -194,6 +210,7 @@
                         <option value="2024" selected>2024년</option>
                         <option value="2023">2023년</option>
                         <option value="2022">2022년</option>
+                        <option value="2021">2021년</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -215,6 +232,8 @@
                         <option value="국어">국어</option>
                         <option value="수학">수학</option>
                         <option value="한국사">한국사</option>
+                        <option value="사회탐구">사회탐구</option>
+                        <option value="과학탐구">과학탐구</option>
                     </select>
                 </div>
             </div>
@@ -223,16 +242,15 @@
     </div>
 
     <div id="loading" class="loading">
-        ⏳ 호랭이닷컴에서 자료를 검색 중입니다...
+        ⏳ Vercel 백엔드를 통해 호랭이닷컴 자료를 탐색 중입니다...
     </div>
 
     <div id="results" class="results-container"></div>
 </div>
 
 <script>
-    // 차단율이 낮고 신뢰도가 높은 CORS 프록시 URL
-    const PROXY_URL = "https://vercel.app";
-    const BASE_URL = "https://www.horaeng.com";
+    // Vercel 프로젝트 API 엔드포인트
+    const VERCEL_API_URL = "https://testfor-happynuri486-9567s-projects.vercel.app/api/search";
 
     async function handleSearch(event) {
         event.preventDefault();
@@ -250,80 +268,33 @@
         results.innerHTML = '';
 
         try {
-            const targetSearchUrl = `${BASE_URL}/search?q=${encodeURIComponent(searchQuery)}`;
-            
-            // corsproxy.io 경유 요청
-            const response = await fetch(PROXY_URL + encodeURIComponent(targetSearchUrl));
-            
+            const response = await fetch(VERCEL_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: searchQuery })
+            });
+
             if (!response.ok) {
-                throw new Error(`상태 코드: ${response.status}`);
+                throw new Error(`HTTP 에러! 상태 코드: ${response.status}`);
             }
 
-            const htmlText = await response.text();
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(htmlText, "text/html");
+            const data = await response.json();
+            loading.style.display = 'none';
 
-            // 게시글 링크 수집
-            const rawLinks = Array.from(doc.querySelectorAll("a"));
-            const validLinks = rawLinks.filter(a => {
-                const href = a.getAttribute("href") || "";
-                return href.includes("board") || href.includes("article") || href.includes("view") || href.includes("post");
-            }).slice(0, 5);
-
-            if (validLinks.length === 0) {
-                loading.style.display = 'none';
-                results.innerHTML = `<div class="empty-msg">"${searchQuery}" 검색 결과가 없습니다.</div>`;
+            if (!data.success) {
+                results.innerHTML = `<div class="empty-msg">⚠️ 검색 중 오류 발생: ${data.error}</div>`;
                 return;
             }
 
-            const items = [];
-
-            for (let link of validLinks) {
-                let href = link.getAttribute("href");
-                let postUrl = href.startsWith("http") ? href : BASE_URL + href;
-                let title = link.textContent.trim() || searchQuery;
-
-                try {
-                    const postRes = await fetch(PROXY_URL + encodeURIComponent(postUrl));
-                    const postHtml = await postRes.text();
-                    const postDoc = parser.parseFromString(postHtml, "text/html");
-
-                    const files = { pdf: [], script: [], audio: [] };
-                    const fileElements = postDoc.querySelectorAll("a[href]");
-
-                    fileElements.forEach(f => {
-                        const fileHref = f.getAttribute("href") || "";
-                        const fileName = f.textContent.trim() || "파일 다운로드";
-                        let fullFileUrl = fileHref.startsWith("http") ? fileHref : BASE_URL + fileHref;
-
-                        const lowerHref = fileHref.toLowerCase();
-                        const lowerName = fileName.toLowerCase();
-
-                        if (lowerHref.includes(".mp3") || lowerName.includes("듣기") || lowerName.includes("음원")) {
-                            files.audio.push({ name: fileName, url: fullFileUrl });
-                        } else if (lowerName.includes("대본") || lowerName.includes("script") || lowerName.includes("txt")) {
-                            files.script.push({ name: fileName, url: fullFileUrl });
-                        } else if (lowerHref.includes(".pdf") || lowerHref.includes(".hwp") || lowerName.includes("문제") || lowerName.includes("정답")) {
-                            files.pdf.push({ name: fileName, url: fullFileUrl });
-                        }
-                    });
-
-                    items.push({ title, postUrl, files });
-                } catch (err) {
-                    console.error("게시글 파싱 에러:", err);
-                }
-            }
-
-            loading.style.display = 'none';
-            renderResults(items);
+            renderResults(data.results);
 
         } catch (error) {
             loading.style.display = 'none';
             results.innerHTML = `
                 <div class="empty-msg">
-                    ❌ 자료를 가져오지 못했습니다.<br>
+                    ❌ Vercel 서버 연결 실패<br>
                     (${error.message})<br><br>
-                    호랭이닷컴 검색 시스템이 차단되었거나 점검 중일 수 있습니다.
+                    Vercel에서 <code>testfor</code> 프로젝트 배포 상태를 확인해주세요.
                 </div>
             `;
         }
@@ -333,24 +304,24 @@
         const results = document.getElementById('results');
 
         if (!items || items.length === 0) {
-            results.innerHTML = '<div class="empty-msg">검색된 자료가 없습니다.</div>';
+            results.innerHTML = '<div class="empty-msg">검색 결과가 없습니다.</div>';
             return;
         }
 
         items.forEach(item => {
             let linksHtml = '';
 
-            if (item.files.pdf) {
+            if (item.files && item.files.pdf) {
                 item.files.pdf.forEach(f => {
                     linksHtml += `<a href="${f.url}" target="_blank" rel="noopener noreferrer" class="btn-dl btn-pdf">📌 ${f.name}</a> `;
                 });
             }
-            if (item.files.script) {
+            if (item.files && item.files.script) {
                 item.files.script.forEach(f => {
                     linksHtml += `<a href="${f.url}" target="_blank" rel="noopener noreferrer" class="btn-dl btn-script">📝 ${f.name}</a> `;
                 });
             }
-            if (item.files.audio) {
+            if (item.files && item.files.audio) {
                 item.files.audio.forEach(f => {
                     linksHtml += `<a href="${f.url}" target="_blank" rel="noopener noreferrer" class="btn-dl btn-audio">🎧 ${f.name}</a> `;
                 });
@@ -359,10 +330,10 @@
             results.innerHTML += `
                 <div class="result-item">
                     <div class="result-title">
-                        <a href="${item.postUrl}" target="_blank" rel="noopener noreferrer">${item.title}</a>
+                        <a href="${item.post_url}" target="_blank" rel="noopener noreferrer">${item.title}</a>
                     </div>
                     <div class="download-links">
-                        ${linksHtml || '<span style="color:#888; font-size:0.9rem;">게시글 내 직접 다운로드 링크가 없습니다. 위 제목을 클릭해 직접 확인하세요.</span>'}
+                        ${linksHtml || '<span style="color:#888; font-size:0.9rem;">첨부파일 링크가 없습니다. 위 제목을 눌러 직접 확인하세요.</span>'}
                     </div>
                 </div>
             `;
